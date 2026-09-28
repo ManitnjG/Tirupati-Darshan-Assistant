@@ -82,7 +82,8 @@ class MainActivity:ComponentActivity(){
  val chosen=pilgrims.filter{selected.contains(it.id.toString())}
  val ready=date.isNotBlank()&&chosen.isNotEmpty()&&chosen.all{it.ready}
  Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){
-  Text("Booking Preparation",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold,color=Navy)\n  AssistChip(onClick={},colors=AssistChipDefaults.assistChipColors(containerColor=GoldSoft),label={Text("₹300 SPECIAL ENTRY DARSHAN",fontWeight=FontWeight.Bold)})
+  Text("Booking Preparation",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold,color=Navy)
+  AssistChip(onClick={},colors=AssistChipDefaults.assistChipColors(containerColor=GoldSoft),label={Text("₹300 SPECIAL ENTRY DARSHAN",fontWeight=FontWeight.Bold)})
   Text("This prepares information only; it does not indicate availability.")
   OutlinedTextField(date,{date=it;prefs.preferredDate=it},modifier=Modifier.fillMaxWidth(),label={Text("Preferred Darshan date (DD-MM-YYYY)")},leadingIcon={Icon(Icons.Default.CalendarMonth,null)})
   Text("Select pilgrims",fontWeight=FontWeight.Bold)
