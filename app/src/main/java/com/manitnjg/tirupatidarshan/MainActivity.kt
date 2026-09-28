@@ -14,7 +14,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.manitnjg.tirupatidarshan.data.*
+import com.manitnjg.tirupatidarshan.security.SensitiveData
 
 class MainActivity:ComponentActivity(){
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{MaterialTheme{App{openOfficial()}}}}
@@ -22,26 +26,67 @@ class MainActivity:ComponentActivity(){
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun App(openOfficial:()->Unit){
+ val context=androidx.compose.ui.platform.LocalContext.current
+ val store=remember{PilgrimStore(context)}
+ val prefs=remember{BookingPreferences(context)}
+ var pilgrims by remember{mutableStateOf(store.all())}
  var tab by remember{mutableIntStateOf(0)}
  Scaffold(topBar={TopAppBar(title={Text("Tirupati Darshan Assistant",fontWeight=FontWeight.Bold)})},bottomBar={NavigationBar{
-  listOf("Home" to Icons.Default.Home,"Watch" to Icons.Default.Notifications,"Bookings" to Icons.Default.ConfirmationNumber,"Profile" to Icons.Default.Person).forEachIndexed{i,p->NavigationBarItem(selected=tab==i,onClick={tab=i},icon={Icon(p.second,null)},label={Text(p.first)})}
- }}){pad->Box(Modifier.padding(pad)){when(tab){0->Home(openOfficial);1->Simple("Release Watch","Watch preferred dates and receive clearly-labelled prediction/official alerts.");2->Simple("My Bookings","Confirmed bookings appear here only after official confirmation.");else->Simple("Pilgrim Profiles","Secure local pilgrim profiles and family groups.")}}}
-}
-@Composable fun Home(openOfficial:()->Unit){Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
- Text("Upcoming Booking Releases",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
- ElevatedCard(Modifier.fillMaxWidth()){Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
-  Text("₹300 Special Entry Darshan",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
-  Text("Select a preferred Darshan date to predict from verified historical observations.")
-  AssistChip(onClick={},label={Text("PREDICTION • NOT OFFICIAL")})
-  Text("No verified history loaded yet",fontWeight=FontWeight.SemiBold)
-  Text("The app will not invent a release date when evidence is insufficient.")
-  Button(onClick={},modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.Notifications,null);Spacer(Modifier.width(8.dp));Text("Watch Release")}
-  OutlinedButton(onClick=openOfficial,modifier=Modifier.fillMaxWidth()){Text("Open Official TTD Booking")}
+  listOf("Home" to Icons.Default.Home,"Prepare" to Icons.Default.CheckCircle,"Bookings" to Icons.Default.ConfirmationNumber,"Profile" to Icons.Default.Person).forEachIndexed{i,p->NavigationBarItem(selected=tab==i,onClick={tab=i},icon={Icon(p.second,null)},label={Text(p.first)})}
+ }}){pad->Box(Modifier.padding(pad)){when(tab){
+  0->Home(pilgrims,prefs,openOfficial,{tab=1},{tab=3})
+  1->Preparation(pilgrims,prefs,openOfficial)
+  2->Simple("My Bookings","Only bookings with reliable official confirmation will be shown as confirmed.")
+  else->Profiles(pilgrims,{p->store.save(p);pilgrims=store.all()},{id->store.delete(id);pilgrims=store.all()})
+ }}}}
+@Composable fun Home(pilgrims:List<Pilgrim>,prefs:BookingPreferences,openOfficial:()->Unit,prepare:()->Unit,profiles:()->Unit){
+ val selected=pilgrims.filter{prefs.selectedPilgrimIds.contains(it.id.toString())}
+ val ready=prefs.preferredDate.isNotBlank()&&selected.isNotEmpty()&&selected.all{it.ready}
+ Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
+  Text("Upcoming Booking Releases",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
+  ElevatedCard(Modifier.fillMaxWidth()){Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+   Text("₹300 Special Entry Darshan",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
+   AssistChip(onClick={},label={Text("PREDICTION • NOT OFFICIAL")})
+   Text("No verified history loaded yet",fontWeight=FontWeight.SemiBold)
+   Text("No release date will be invented without sufficient verified evidence.")
+   Text(if(ready)"BOOKING PREPARATION READY" else "Preparation incomplete",fontWeight=FontWeight.Bold)
+   Button(onClick=prepare,modifier=Modifier.fillMaxWidth()){Text("Prepare Booking")}
+   OutlinedButton(onClick=openOfficial,modifier=Modifier.fillMaxWidth()){Text("Open Official TTD")}
+  }}
+  ListItem(headlineContent={Text("Pilgrim Profiles")},supportingContent={Text(pilgrims.size.toString()+" saved")},leadingContent={Icon(Icons.Default.Groups,null)},modifier=Modifier.fillMaxWidth())
+  Button(onClick=profiles,modifier=Modifier.fillMaxWidth()){Text("Manage Pilgrims")}
+  Text("Independent booking assistant. CAPTCHA, OTP, queues, payment and final confirmation remain controlled by TTD.",style=MaterialTheme.typography.bodySmall)
  }}
- Text("Booking preparation",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
- ListItem(headlineContent={Text("Pilgrims")},supportingContent={Text("Add and validate pilgrim details locally")},leadingContent={Icon(Icons.Default.Groups,null)})
- ListItem(headlineContent={Text("Release Calendar")},supportingContent={Text("Predicted and official states stay separate")},leadingContent={Icon(Icons.Default.CalendarMonth,null)})
- ListItem(headlineContent={Text("Accommodation & Travel")},supportingContent={Text("Plan separately from Darshan status")},leadingContent={Icon(Icons.Default.Luggage,null)})
- Text("Independent booking assistant. Final booking, CAPTCHA/OTP, payment and confirmation are provided by TTD.",style=MaterialTheme.typography.bodySmall)
-}}
+@Composable fun Profiles(pilgrims:List<Pilgrim>,save:(Pilgrim)->Unit,delete:(Long)->Unit){
+ var showAdd by remember{mutableStateOf(false)}
+ Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
+  Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("Pilgrim Profiles",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);FilledTonalButton(onClick={showAdd=true}){Text("+ Add")}}
+  if(pilgrims.isEmpty())Text("No pilgrims saved yet.")
+  pilgrims.forEach{p->ElevatedCard(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text(p.name,fontWeight=FontWeight.Bold);Text(p.age.toString()+" years • "+p.gender);Text(p.idType+": "+SensitiveData.maskId(p.idNumber));Text(if(p.ready)"Ready ✓" else "Incomplete");TextButton(onClick={delete(p.id)}){Text("Delete")}}}}
+ }
+ if(showAdd)AddPilgrimDialog(onDismiss={showAdd=false},onSave={save(it);showAdd=false})
+}
+@Composable fun AddPilgrimDialog(onDismiss:()->Unit,onSave:(Pilgrim)->Unit){
+ var name by remember{mutableStateOf("")};var age by remember{mutableStateOf("")};var gender by remember{mutableStateOf("")};var idType by remember{mutableStateOf("Aadhaar")};var idNo by remember{mutableStateOf("")};var mobile by remember{mutableStateOf("")}
+ AlertDialog(onDismissRequest=onDismiss,title={Text("Add Pilgrim")},text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)){
+  OutlinedTextField(name,{name=it},label={Text("Full name")});OutlinedTextField(age,{age=it.filter(Char::isDigit)},label={Text("Age")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number));OutlinedTextField(gender,{gender=it},label={Text("Gender")});OutlinedTextField(idType,{idType=it},label={Text("ID type")});OutlinedTextField(idNo,{idNo=it},label={Text("ID number")});OutlinedTextField(mobile,{mobile=it.filter(Char::isDigit)},label={Text("Mobile")})
+ }},confirmButton={Button(enabled=name.isNotBlank()&&(age.toIntOrNull()?:0)>0&&idNo.length>=4,onClick={onSave(Pilgrim(name=name,age=age.toInt(),gender=gender,idType=idType,idNumber=idNo,mobile=mobile))}){Text("Save")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})
+}
+@Composable fun Preparation(pilgrims:List<Pilgrim>,prefs:BookingPreferences,openOfficial:()->Unit){
+ var date by remember{mutableStateOf(prefs.preferredDate)}
+ var selected by remember{mutableStateOf(prefs.selectedPilgrimIds)}
+ val chosen=pilgrims.filter{selected.contains(it.id.toString())}
+ val ready=date.isNotBlank()&&chosen.isNotEmpty()&&chosen.all{it.ready}
+ Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){
+  Text("₹300 Booking Preparation",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
+  Text("This prepares information only; it does not indicate availability.")
+  OutlinedTextField(date,{date=it;prefs.preferredDate=it},modifier=Modifier.fillMaxWidth(),label={Text("Preferred Darshan date (DD-MM-YYYY)")},leadingIcon={Icon(Icons.Default.CalendarMonth,null)})
+  Text("Select pilgrims",fontWeight=FontWeight.Bold)
+  if(pilgrims.isEmpty())Text("Add pilgrim profiles first.")
+  pilgrims.forEach{p->Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Column{Text(p.name,fontWeight=FontWeight.SemiBold);Text(if(p.ready)"Details ready" else "Incomplete",style=MaterialTheme.typography.bodySmall)};Checkbox(checked=selected.contains(p.id.toString()),onCheckedChange={checked->selected=if(checked)selected+p.id.toString() else selected-p.id.toString();prefs.selectedPilgrimIds=selected})}}
+  HorizontalDivider()
+  Text(if(ready)"READY FOR RELEASE ✓" else "Complete date and valid pilgrim details",fontWeight=FontWeight.Bold)
+  Button(enabled=ready,onClick=openOfficial,modifier=Modifier.fillMaxWidth()){Text("Open Official TTD Booking")}
+  Text("You will complete CAPTCHA/OTP, queue and payment on the official TTD flow.",style=MaterialTheme.typography.bodySmall)
+ }}
 @Composable fun Simple(title:String,body:String){Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){Text(title,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text(body)}}
