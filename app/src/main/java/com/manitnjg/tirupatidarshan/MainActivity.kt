@@ -16,7 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
@@ -25,7 +25,7 @@ import com.manitnjg.tirupatidarshan.data.*
 import com.manitnjg.tirupatidarshan.security.SensitiveData
 
 class MainActivity:ComponentActivity(){
- override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{TirupatiTheme{App{openOfficial()}}}}
+ override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{TirupatiTheme(content={App{openOfficial()}})}}
  private fun openOfficial(){val uri=Uri.parse("https://tirupatibalaji.ap.gov.in/");runCatching{CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(this,uri)}.onFailure{startActivity(Intent(Intent.ACTION_VIEW,uri))}}
 }
 @OptIn(ExperimentalMaterial3Api::class)
