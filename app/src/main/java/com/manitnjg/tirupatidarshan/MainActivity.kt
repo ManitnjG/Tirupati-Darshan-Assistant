@@ -6,6 +6,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -17,11 +19,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import com.manitnjg.tirupatidarshan.ui.*
 import com.manitnjg.tirupatidarshan.data.*
 import com.manitnjg.tirupatidarshan.security.SensitiveData
 
 class MainActivity:ComponentActivity(){
- override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{MaterialTheme{App{openOfficial()}}}}
+ override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{TirupatiTheme{App{openOfficial()}}}}
  private fun openOfficial(){val uri=Uri.parse("https://tirupatibalaji.ap.gov.in/");runCatching{CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(this,uri)}.onFailure{startActivity(Intent(Intent.ACTION_VIEW,uri))}}
 }
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,8 +35,8 @@ class MainActivity:ComponentActivity(){
  val prefs=remember{BookingPreferences(context)}
  var pilgrims by remember{mutableStateOf(store.all())}
  var tab by remember{mutableIntStateOf(0)}
- Scaffold(topBar={TopAppBar(title={Text("Tirupati Darshan Assistant",fontWeight=FontWeight.Bold)})},bottomBar={NavigationBar{
-  listOf("Home" to Icons.Default.Home,"Prepare" to Icons.Default.CheckCircle,"Bookings" to Icons.Default.ConfirmationNumber,"Profile" to Icons.Default.Person).forEachIndexed{i,p->NavigationBarItem(selected=tab==i,onClick={tab=i},icon={Icon(p.second,null)},label={Text(p.first)})}
+ Scaffold(containerColor=MaterialTheme.colorScheme.background,topBar={TopAppBar(colors=TopAppBarDefaults.topAppBarColors(containerColor=Navy,titleContentColor=Color.White),title={Column{Text("Tirupati Darshan",fontWeight=FontWeight.Bold);Text("Smart Assistant",style=MaterialTheme.typography.labelSmall,color=Gold)}})},bottomBar={NavigationBar(containerColor=Navy){
+  listOf("Home" to Icons.Default.Home,"Prepare" to Icons.Default.CheckCircle,"Bookings" to Icons.Default.ConfirmationNumber,"Profile" to Icons.Default.Person).forEachIndexed{i,p->NavigationBarItem(selected=tab==i,onClick={tab=i},colors=NavigationBarItemDefaults.colors(selectedIconColor=Navy,selectedTextColor=Gold,indicatorColor=Gold,unselectedIconColor=Color.White,unselectedTextColor=Color.White),icon={Icon(p.second,null)},label={Text(p.first)})}
  }}){pad->Box(Modifier.padding(pad)){when(tab){
   0->Home(pilgrims,prefs,openOfficial,{tab=1},{tab=3})
   1->Preparation(pilgrims,prefs,openOfficial)
@@ -43,15 +47,15 @@ class MainActivity:ComponentActivity(){
  val selected=pilgrims.filter{prefs.selectedPilgrimIds.contains(it.id.toString())}
  val ready=prefs.preferredDate.isNotBlank()&&selected.isNotEmpty()&&selected.all{it.ready}
  Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
-  Text("Upcoming Booking Releases",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
-  ElevatedCard(Modifier.fillMaxWidth()){Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+  Text("Upcoming Booking Release",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold,color=Navy)
+  ElevatedCard(Modifier.fillMaxWidth(),colors=CardDefaults.elevatedCardColors(containerColor=Color.White),shape=RoundedCornerShape(22.dp)){Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
    Text("₹300 Special Entry Darshan",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
-   AssistChip(onClick={},label={Text("PREDICTION • NOT OFFICIAL")})
+   AssistChip(onClick={},colors=AssistChipDefaults.assistChipColors(containerColor=GoldSoft,labelColor=Navy),label={Text("PREDICTION • NOT YET RELEASED",fontWeight=FontWeight.Bold)})
    Text("No verified history loaded yet",fontWeight=FontWeight.SemiBold)
    Text("No release date will be invented without sufficient verified evidence.")
    Text(if(ready)"BOOKING PREPARATION READY" else "Preparation incomplete",fontWeight=FontWeight.Bold)
-   Button(onClick=prepare,modifier=Modifier.fillMaxWidth()){Text("Prepare Booking")}
-   OutlinedButton(onClick=openOfficial,modifier=Modifier.fillMaxWidth()){Text("Open Official TTD")}
+   Button(onClick=prepare,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp)){Icon(Icons.Default.Bolt,null);Spacer(Modifier.width(8.dp));Text("Prepare Booking",fontWeight=FontWeight.Bold)}
+   OutlinedButton(onClick=openOfficial,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp)){Icon(Icons.Default.OpenInBrowser,null);Spacer(Modifier.width(8.dp));Text("Open Official TTD")}
   }}
   ListItem(headlineContent={Text("Pilgrim Profiles")},supportingContent={Text(pilgrims.size.toString()+" saved")},leadingContent={Icon(Icons.Default.Groups,null)},modifier=Modifier.fillMaxWidth())
   Button(onClick=profiles,modifier=Modifier.fillMaxWidth()){Text("Manage Pilgrims")}
@@ -60,9 +64,9 @@ class MainActivity:ComponentActivity(){
 @Composable fun Profiles(pilgrims:List<Pilgrim>,save:(Pilgrim)->Unit,delete:(Long)->Unit){
  var showAdd by remember{mutableStateOf(false)}
  Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-  Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("Pilgrim Profiles",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);FilledTonalButton(onClick={showAdd=true}){Text("+ Add")}}
+  Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text("Pilgrim Profiles",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold,color=Navy);Button(onClick={showAdd=true},shape=RoundedCornerShape(50)){Icon(Icons.Default.PersonAdd,null);Spacer(Modifier.width(6.dp));Text("Add")}}
   if(pilgrims.isEmpty())Text("No pilgrims saved yet.")
-  pilgrims.forEach{p->ElevatedCard(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text(p.name,fontWeight=FontWeight.Bold);Text(p.age.toString()+" years • "+p.gender);Text(p.idType+": "+SensitiveData.maskId(p.idNumber));Text(if(p.ready)"Ready ✓" else "Incomplete");TextButton(onClick={delete(p.id)}){Text("Delete")}}}}
+  pilgrims.forEach{p->ElevatedCard(Modifier.fillMaxWidth(),shape=RoundedCornerShape(18.dp),colors=CardDefaults.elevatedCardColors(containerColor=Color.White)){Column(Modifier.padding(16.dp)){Text(p.name,fontWeight=FontWeight.Bold);Text(p.age.toString()+" years • "+p.gender);Text(p.idType+": "+SensitiveData.maskId(p.idNumber));Text(if(p.ready)"Ready ✓" else "Incomplete");TextButton(onClick={delete(p.id)}){Text("Delete")}}}}
  }
  if(showAdd)AddPilgrimDialog(onDismiss={showAdd=false},onSave={save(it);showAdd=false})
 }
@@ -78,15 +82,15 @@ class MainActivity:ComponentActivity(){
  val chosen=pilgrims.filter{selected.contains(it.id.toString())}
  val ready=date.isNotBlank()&&chosen.isNotEmpty()&&chosen.all{it.ready}
  Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){
-  Text("₹300 Booking Preparation",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
+  Text("Booking Preparation",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold,color=Navy)\n  AssistChip(onClick={},colors=AssistChipDefaults.assistChipColors(containerColor=GoldSoft),label={Text("₹300 SPECIAL ENTRY DARSHAN",fontWeight=FontWeight.Bold)})
   Text("This prepares information only; it does not indicate availability.")
   OutlinedTextField(date,{date=it;prefs.preferredDate=it},modifier=Modifier.fillMaxWidth(),label={Text("Preferred Darshan date (DD-MM-YYYY)")},leadingIcon={Icon(Icons.Default.CalendarMonth,null)})
   Text("Select pilgrims",fontWeight=FontWeight.Bold)
   if(pilgrims.isEmpty())Text("Add pilgrim profiles first.")
   pilgrims.forEach{p->Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Column{Text(p.name,fontWeight=FontWeight.SemiBold);Text(if(p.ready)"Details ready" else "Incomplete",style=MaterialTheme.typography.bodySmall)};Checkbox(checked=selected.contains(p.id.toString()),onCheckedChange={checked->selected=if(checked)selected+p.id.toString() else selected-p.id.toString();prefs.selectedPilgrimIds=selected})}}
   HorizontalDivider()
-  Text(if(ready)"READY FOR RELEASE ✓" else "Complete date and valid pilgrim details",fontWeight=FontWeight.Bold)
-  Button(enabled=ready,onClick=openOfficial,modifier=Modifier.fillMaxWidth()){Text("Open Official TTD Booking")}
+  ElevatedCard(Modifier.fillMaxWidth(),colors=CardDefaults.elevatedCardColors(containerColor=if(ready) Color(0xFFE8F5E9) else GoldSoft),shape=RoundedCornerShape(18.dp)){Row(Modifier.padding(16.dp)){Icon(if(ready) Icons.Default.CheckCircle else Icons.Default.Info,null,tint=if(ready) Success else Warning);Spacer(Modifier.width(10.dp));Text(if(ready)"BOOKING READY • All required details prepared" else "Complete date and valid pilgrim details",fontWeight=FontWeight.Bold)}}
+  Button(enabled=ready,onClick=openOfficial,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(14.dp)){Icon(Icons.Default.OpenInBrowser,null);Spacer(Modifier.width(8.dp));Text("Open Official TTD Booking",fontWeight=FontWeight.Bold)}
   Text("You will complete CAPTCHA/OTP, queue and payment on the official TTD flow.",style=MaterialTheme.typography.bodySmall)
  }}
 @Composable fun Simple(title:String,body:String){Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){Text(title,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text(body)}}
